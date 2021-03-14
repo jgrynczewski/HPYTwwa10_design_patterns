@@ -1,6 +1,7 @@
 # OCP
 from enum import Enum
 
+# łamiemy OCP
 
 class Color(Enum):
     RED = 1
@@ -54,3 +55,85 @@ for prod in pf.filter_by_color(products, Color.GREEN):
 print("\nLarge products:")
 for prod in pf.filter_by_size(products, Size.LARGE):
     print(f"\t{prod.name} is large")
+
+# Nie łamiemy OCP
+import abc
+
+class ISpecification(abc.ABC):
+
+    @abc.abstractmethod
+    def is_satisfied(self, item):
+        pass
+
+    def __and__(self, other):
+        return AndSpecification(self, other)
+
+
+class IFilter(abc.ABC):
+
+    @abc.abstractmethod
+    def fitler(self, items, specification):
+        pass
+
+
+class ColorSpecification(ISpecification):
+    def __init__(self, color):
+        self.color = color
+
+    def is_satisfied(self, item):
+        return item.color == self.color
+
+
+class BetterFilter:
+    def filter(self, items, specification: ISpecification):
+        for item in items:
+            if specification.is_satisfied(item):
+                yield item
+
+
+class SizeSpecification(ISpecification):
+    def __init__(self, size):
+        self.size = size
+
+    def is_satisfied(self, item):
+        return item.size == self.size
+
+
+# Combinator
+class AndSpecification(ISpecification):
+    def __init__(self, spec1: ISpecification, spec2: ISpecification):
+        self.spec1 = spec1
+        self.spec2 = spec2
+
+    def is_satisfied(self, item):
+        return self.spec1.is_satisfied(item) and self.spec2.is_satisfied(item)
+
+
+##############
+# KOD KLIENCKI
+##############
+
+bf = BetterFilter()
+
+green = ColorSpecification(Color.GREEN)
+print("\nGreen products (new_way):")
+for prod in bf.filter(products, green):
+    print(f"\t{prod.name} is green")
+
+large = SizeSpecification(Size.LARGE)
+print("\nLarge products (new_way):")
+for prod in bf.filter(products, large):
+    print(f"\t{prod.name} is large")
+
+# large_blue = AndSpecification(
+#     SizeSpecification(Size.LARGE),
+#     ColorSpecification(Color.BLUE)
+# )
+
+blue = ColorSpecification(Color.BLUE)
+large_blue = large and blue
+
+print("\nLarge and blue products (new_way):")
+for prod in bf.filter(products, large_blue):
+    print(f"\t{prod.name} is large and blue")
+
